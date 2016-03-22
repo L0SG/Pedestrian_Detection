@@ -37,9 +37,11 @@ datasize_pos = 20000
 datasize_neg = 60000
 test_split = 0.1
 ###########################################################################################
-print 'loading pedestrian dataset...'
+print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train,
                                format='pgm', label=1, datasize=datasize_pos)
+
+print 'loading negative dataset...'
 data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
                                       format='pgm', label=0, patchsize=patchsize, datasize=datasize_neg)
 
@@ -88,12 +90,9 @@ model.fit(X_train, y_train,
           callbacks=[callbacks.EarlyStopping(patience=5, verbose=True)])
 print 'training complete'
 
-# temporary : skip evaluation for testing
-"""
 print 'evaluating model...'
 score = model.evaluate(X_test, y_test, batch_size=32, verbose=1, show_accuracy=True)
 print 'test accuracy : ' + str(score[1])
-"""
 
 print 'saving architecture and weights...'
 json_string = model.to_json()

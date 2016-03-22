@@ -73,6 +73,16 @@ def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
     import numpy as np
     from theano import tensor as T
     from theano import function
+    # theano dimshuffle
+    # greyscale only maybe
+    # need to fix extending x if intende to use color channels too
+    arr_tensor3 = T.tensor3('arr')
+    arr_shuffler = arr_tensor3.dimshuffle((1, 2, 0))
+    shuffle_function = function([arr_tensor3], arr_shuffler)
+
+    arr_tensor3_2 = T.tensor3('arr')
+    arr_deshuffler = arr_tensor3_2.dimshuffle(0, 'x', 1, 2)
+    deshuffle_function = function([arr_tensor3_2], arr_deshuffler)
 
     x=[]
     y=[]
@@ -82,24 +92,10 @@ def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
         for f in glob.glob(os.path.join(dir, "*."+str(format))):
             img = Image.open(str(f))
             arr = image.img_to_array(img)
-
-            # theano dimshuffle
-            # greyscale only maybe
-            # need to fix extending x if intende to use color channels too
-            arr_tensor3 = T.tensor3('arr')
-            arr_shuffler = arr_tensor3.dimshuffle((1, 2, 0))
-            shuffle_function = function([arr_tensor3], arr_shuffler)
             arr_shuffled = shuffle_function(arr)
-
             patches = extract_patches_2d(arr_shuffled, patch_size=patchsize, max_patches=10)
-
-            # theano dimshuffle
-            arr_tensor3 = T.tensor3('arr')
-            arr_shuffler = arr_tensor3.dimshuffle(0, 'x', 1, 2)
-            shuffle_function = function([arr_tensor3], arr_shuffler)
-            patches_shuffled =shuffle_function(patches)
-
-            x.extend(patches_shuffled)
+            patches_deshuffled = deshuffle_function(patches)
+            x.extend(patches_deshuffled)
             y.extend([label]*len(patches))
             if len(x) >= datasize:
                 break
