@@ -33,8 +33,8 @@ y_train = []
 train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
 train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 patchsize = (96, 48)
-datasize_pos = 10000
-datasize_neg = 20000
+datasize_pos = 10
+datasize_neg = 20
 test_split = 0.1
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
