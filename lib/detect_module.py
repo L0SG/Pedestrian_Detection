@@ -104,14 +104,12 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     pyramid_list, scale_list = pyramid(image, downscale, min_height, min_width)
 
     for i in xrange(0, len(pyramid_list)):
-        window_list = []
         window_channels = []
         for channels in xrange(0, len(pyramid_list[i])):
             window = view_as_windows(pyramid_list[i][channels], window_shape=(min_height, min_width), step=step)
             window_reshaped = np.reshape(window, newshape=(window.shape[0]*window.shape[1], min_height, min_width))
-            window_channels.extend(window_reshaped)
-        window_list.append(window_channels)
-        window_list = np.asarray(window_list)
+            window_channels.append(window_reshaped)
+        window_list = np.asarray(window_channels)
         window_list = shuffle_function(window_list)
 
         # temporary code

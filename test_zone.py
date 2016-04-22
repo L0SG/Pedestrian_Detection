@@ -20,5 +20,5 @@ for i in range(0, len(pyramid_list)):
     print pyramid_list[i].shape, scale_list[i]
 
 print 'windows of the pyramid image shape list'
-boxes = detect_module.generate_bounding_boxes(model=0, image=sample, downscale=1.5, step=8, min_height=96, min_width=48)
+boxes = detect_module.generate_bounding_boxes(model=0, image=sample, downscale=1.5, step=7, min_height=96, min_width=48)
 
