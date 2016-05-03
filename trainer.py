@@ -1,4 +1,5 @@
 from keras.models import Sequential
+from keras.preprocessing import image
 import keras.layers as layers
 from keras import callbacks
 import numpy as np
@@ -28,9 +29,7 @@ if args.negativedatasize:
 
 X_train = []
 y_train = []
-#tmp
-X_train1 = []
-y_train1 = []
+
 # temporary variable declaration
 train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
 train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
@@ -75,22 +74,34 @@ model.add(layers.Dense(500, activation='relu'))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(2, activation='softmax'))
 
-# "class_mode" defaults to "categorical". For correctly displaying accuracy
-# in a binary classification problem, it should be set to "binary".
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
-              class_mode='categorical')
+              metrics=['accuracy'])
 print 'building complete'
 
+print 'augmenting training files...'
+datagen = image.ImageDataGenerator(featurewise_center=True,
+                                   samplewise_center=False,
+                                   featurewise_std_normalization=True,
+                                   samplewise_std_normalization=False,
+                                   zca_whitening=False,
+                                   rotation_range=0.10,
+                                   width_shift_range=0.1,
+                                   height_shift_range=0.1,
+                                   shear_range=0.,
+                                   zoom_range=0.1,
+                                   horizontal_flip=True,
+                                   vertical_flip=False,
+                                   dim_ordering='th')
+datagen.fit(X_train)
+
 print 'training model...'
-model.fit(X_train, y_train,
-          nb_epoch=100,
-          batch_size=32,
-          verbose=1,
-          shuffle=True,
-          show_accuracy=True,
-          validation_split=0.1,
-          callbacks=[callbacks.EarlyStopping(patience=10, verbose=True)])
+model.fit_generator(datagen.flow(X_train, y_train, batch_size=32),
+                    samples_per_epoch=len(X_train),
+                    nb_epoch=100,
+                    verbose=1,
+                    validation_data=(X_test, y_test),
+                    callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=10, verbose=1, mode='auto')])
 print 'training complete'
 
 print 'evaluating model...'

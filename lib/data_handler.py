@@ -93,7 +93,7 @@ def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
             img = Image.open(str(f))
             arr = image.img_to_array(img)
             arr_shuffled = shuffle_function(arr)
-            patches = extract_patches_2d(arr_shuffled, patch_size=patchsize, max_patches=10)
+            patches = extract_patches_2d(arr_shuffled, patch_size=patchsize, max_patches=1)
             patches_deshuffled = deshuffle_function(patches)
             x.extend(patches_deshuffled)
             y.extend([label]*len(patches))
