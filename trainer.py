@@ -28,22 +28,24 @@ if args.negativedatasize:
 
 X_train = []
 y_train = []
-
+#tmp
+X_train1 = []
+y_train1 = []
 # temporary variable declaration
 train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
 train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 patchsize = (96, 48)
-datasize_pos = 10
-datasize_neg = 20
+datasize_pos = 15000
+datasize_neg = 15000
 test_split = 0.1
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train,
-                               format='pgm', label=1, datasize=datasize_pos)
+                               format='pgm', label=(1,0), datasize=datasize_pos)
 
 print 'loading negative dataset...'
 data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
-                                      format='pgm', label=0, patchsize=patchsize, datasize=datasize_neg)
+                                      format='pgm', label=(0,1), patchsize=patchsize, datasize=datasize_neg)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
@@ -55,6 +57,7 @@ X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=
 print 'data preparation complete'
 
 print 'training data shape : ' + str(X_train.shape)
+
 
 print 'building model...'
 model = Sequential()
@@ -70,13 +73,13 @@ model.add(layers.Dense(1000, activation='relu'))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(500, activation='relu'))
 model.add(layers.Dropout(0.5))
-model.add(layers.Dense(1, activation='sigmoid'))
+model.add(layers.Dense(2, activation='softmax'))
 
 # "class_mode" defaults to "categorical". For correctly displaying accuracy
 # in a binary classification problem, it should be set to "binary".
-model.compile(loss='binary_crossentropy',
+model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
-              class_mode='binary')
+              class_mode='categorical')
 print 'building complete'
 
 print 'training model...'
@@ -87,7 +90,7 @@ model.fit(X_train, y_train,
           shuffle=True,
           show_accuracy=True,
           validation_split=0.1,
-          callbacks=[callbacks.EarlyStopping(patience=5, verbose=True)])
+          callbacks=[callbacks.EarlyStopping(patience=10, verbose=True)])
 print 'training complete'
 
 print 'evaluating model...'
