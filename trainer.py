@@ -61,12 +61,14 @@ print 'training data shape : ' + str(X_train.shape)
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
-model.add(layers.Convolution2D(nb_filter=12, nb_row=5, nb_col=5,
+model.add(layers.Convolution2D(nb_filter=24, nb_row=13, nb_col=13,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
-model.add(layers.Convolution2D(nb_filter=24, nb_row=3, nb_col=3,
+model.add(layers.Convolution2D(nb_filter=48, nb_row=9, nb_col=9,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
+model.add(layers.Convolution2D(nb_filter=96, nb_row=5, nb_col=5,
+                               activation='relu', border_mode='valid'))
 model.add(layers.Flatten())
 model.add(layers.Dense(1000, activation='relu'))
 model.add(layers.Dropout(0.5))
@@ -85,11 +87,11 @@ datagen = image.ImageDataGenerator(featurewise_center=True,
                                    featurewise_std_normalization=True,
                                    samplewise_std_normalization=False,
                                    zca_whitening=False,
-                                   rotation_range=0.10,
-                                   width_shift_range=0.1,
-                                   height_shift_range=0.1,
+                                   rotation_range=0.05,
+                                   width_shift_range=0.05,
+                                   height_shift_range=0.05,
                                    shear_range=0.,
-                                   zoom_range=0.1,
+                                   zoom_range=0.05,
                                    horizontal_flip=True,
                                    vertical_flip=False,
                                    dim_ordering='th')
@@ -105,7 +107,7 @@ model.fit_generator(datagen.flow(X_train, y_train, batch_size=32),
 print 'training complete'
 
 print 'evaluating model...'
-score = model.evaluate(X_test, y_test, batch_size=32, verbose=1, show_accuracy=True)
+score = model.evaluate(X_test, y_test, batch_size=32, verbose=1)
 print 'test accuracy : ' + str(score[1])
 
 print 'saving architecture and weights...'
