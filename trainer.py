@@ -40,11 +40,11 @@ test_split = 0.1
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train,
-                               format='pgm', label=(1,0), datasize=datasize_pos)
+                               format='pgm', label=(1, 0), datasize=datasize_pos)
 
 print 'loading negative dataset...'
 data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
-                                      format='pgm', label=(0,1), patchsize=patchsize, datasize=datasize_neg)
+                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
@@ -61,13 +61,13 @@ print 'training data shape : ' + str(X_train.shape)
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
-model.add(layers.Convolution2D(nb_filter=24, nb_row=13, nb_col=13,
+model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
-model.add(layers.Convolution2D(nb_filter=48, nb_row=9, nb_col=9,
+model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
-model.add(layers.Convolution2D(nb_filter=96, nb_row=5, nb_col=5,
+model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
                                activation='relu', border_mode='valid'))
 model.add(layers.Flatten())
 model.add(layers.Dense(1000, activation='relu'))
@@ -80,6 +80,7 @@ model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 print 'building complete'
+model.summary()
 
 print 'augmenting training files...'
 datagen = image.ImageDataGenerator(featurewise_center=True,

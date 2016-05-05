@@ -36,8 +36,8 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
     import os
 
     #temporary path declaration
-    CNN_model_path = os.path.join(os.pardir, 'model.json')
-    CNN_weight_path = os.path.join(os.pardir, 'weights.h5')
+    CNN_model_path = os.path.join(os.getcwd(), 'model.json')
+    CNN_weight_path = os.path.join(os.getcwd(), 'weights.h5')
 
     model = model_from_json(open(CNN_model_path).read())
     model.load_weights(CNN_weight_path)
@@ -66,9 +66,10 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
             test.append(window_list[i])
 
     CNN_detected_image_list = np.asarray(CNN_detected_image_list)
-    #temporary code
-    test=np.asarray(test)
 
+    # temporary code
+    test = np.asarray(test)
+    """
     print "Pause"
     count=0
     for test_image in test:
@@ -76,7 +77,7 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
         count=count+1
         print "CNN_Test_image"+str(count)
         im.save("CNN_Test_image"+str(count)+".png", "PNG")
-
+    """
     return CNN_detected_image_list
 
 
@@ -98,7 +99,7 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
         for i in range(0, y_num):
             y1 = i*step*scale_factor
             y2 = y1+scale_factor*min_height
-            y1_int = int( y1)
+            y1_int = int(y1)
             y2_int = int(y2)
 
             # temporary code for debugging
@@ -188,7 +189,7 @@ def draw_rectangle(boxes_pos, __image):
     draw = ImageDraw.Draw(img)
 
     for box_pos in boxes_pos:
-        pos_tuple=[(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
+        pos_tuple = [(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
         draw.rectangle(pos_tuple, fill=None, outline='white')
     del draw
     img.save("Detected_Image.png", "PNG")
@@ -252,7 +253,7 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
 
     sup_box_pos_list = non_max_suppression_fast(CNN_box_pos_list, overlapThresh)
 
-    # temporary ocde
+    # temporary code
     print "Suppressed box position list"
     print sup_box_pos_list
 

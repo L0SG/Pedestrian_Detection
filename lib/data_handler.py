@@ -60,6 +60,7 @@ def load_data_general(dir, X, Y, format, label, datasize):
     X.extend(x)
     Y.extend(y)
 
+
 def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
     # take all files from the specified path and generate random patches from these files
     # and label each file with the specified label annotation
