@@ -13,8 +13,8 @@ dummy = []
 data_handler.load_data_general("/mnt/hgfs/Shared/DaimlerBenchmark/Data/SampleData",
                                       im_val, dummy, format='pgm', label=0, datasize=1)
 samples = im_val
-img_count = 0
+count = 0
 for sample in samples:
     boxes = detect_module.generate_bounding_boxes(model=0, image=sample, downscale=1.5, step=10,
-                                                  min_height=96, min_width=48, img_count=img_count)
-    img_count += 1
+                                                  min_height=96, min_width=48, img_count=count)
+    count += 1

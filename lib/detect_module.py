@@ -192,7 +192,7 @@ def non_max_suppression_fast(boxes, overlapThresh):
     return boxes[pick].astype("int")
 
 
-def draw_rectangle(boxes_pos, __image, img_num):
+def draw_rectangle(boxes_pos, __image, img_count):
     from PIL import ImageDraw
     from keras.preprocessing import image
 
@@ -203,10 +203,10 @@ def draw_rectangle(boxes_pos, __image, img_num):
         pos_tuple = [(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
         draw.rectangle(pos_tuple, fill=None, outline='white')
     del draw
-    img.save("Detected_Image"+str(img_num)+".png", "PNG")
+    img.save("Detected_Image"+str(img_count)+".png", "PNG")
 
 
-def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, img_num, overlapThresh=0.9):
+def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, img_count, overlapThresh=0.9):
     from skimage.util import view_as_windows
     import numpy as np
     from theano import tensor as T
@@ -273,7 +273,7 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     print sup_box_pos_list
 
 
-    draw_rectangle(sup_box_pos_list, image, img_num)
+    draw_rectangle(sup_box_pos_list, image, img_count)
 
     # temporary return
     return sup_box_pos_list
