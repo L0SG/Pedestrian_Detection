@@ -22,7 +22,7 @@ def pyramid(__image, downscale, min_height, min_width):
     return pyramid_list, scale_list
 
 
-def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_weight_path):
+def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_weight_path, accuracy=1):
     from keras.models import Sequential
     from keras.models import model_from_json
     import keras.layers as layers
@@ -35,9 +35,14 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
     from keras.preprocessing import image
     import os
 
+
     #temporary path declaration
     CNN_model_path = os.path.join(os.getcwd(), 'model.json')
     CNN_weight_path = os.path.join(os.getcwd(), 'weights.h5')
+
+    #temporary path declaration
+    #CNN_model_path='/home/jpr1/project/Pedestrian_Detection-master/model.json'
+    #CNN_weight_path='/home/jpr1/project/Pedestrian_Detection-master/weights.h5'
 
     model = model_from_json(open(CNN_model_path).read())
     model.load_weights(CNN_weight_path)
@@ -47,20 +52,25 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
     print "CNN model is built."
     # We can also use probability
     print window_list.shape
-    classes = model.predict_classes(window_list, batch_size=32) #Need to fix batch_size
+    proba = model.predict_proba(window_list, batch_size=32) #Need to fix batch_size
+
+    #temporary
+    print model.predict_classes(window_list, batch_size=32)
 
     #temporary code
-    print "CNN classes"
-    print "length: "+str(len(classes))
-    print classes
+    print "CNN Probability List"
+    print "length: "+str(len(proba))
+    print proba
+
+
 
     CNN_detected_image_list=[]
-    #temporary code
     test=[]
 
     print "Print position of CNN detected image"
-    for i in range(0, len(classes)):
-        if classes[i] == 0:
+    for i in range(0, len(proba)):
+        #proba[i][0]: probability of T, proba[i][1] proba. of F
+        if proba[i][0] >= accuracy:
             print window_pos_list[i]
             CNN_detected_image_list.append(window_pos_list[i])
             test.append(window_list[i])
@@ -69,6 +79,7 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
 
     # temporary code
     test = np.asarray(test)
+
     """
     print "Pause"
     count=0
@@ -88,7 +99,7 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
         print "Something Wrong"
 
     # temporary code for debugging
-    print "Print xy_num_list"
+    print "Print x, y number of window list per scale"
     print xy_num_list
 
     for x in range(0, len(scale_list)):
@@ -251,11 +262,16 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     print "length:"+str(len(CNN_box_pos_list))
     print CNN_box_pos_list
 
+    #temporary overlapThresh value
+    overlapThresh=1
+
     sup_box_pos_list = non_max_suppression_fast(CNN_box_pos_list, overlapThresh)
 
     # temporary code
     print "Suppressed box position list"
+    print "sup_box_pos_list length:"+str(len(sup_box_pos_list))
     print sup_box_pos_list
+
 
     draw_rectangle(sup_box_pos_list, image)
 

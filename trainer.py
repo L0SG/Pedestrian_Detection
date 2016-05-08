@@ -69,6 +69,7 @@ model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
 model.add(layers.MaxPooling2D())
 model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
                                activation='relu', border_mode='valid'))
+model.add(layers.MaxPooling2D())
 model.add(layers.Flatten())
 model.add(layers.Dense(1000, activation='relu'))
 model.add(layers.Dropout(0.5))
@@ -83,9 +84,9 @@ print 'building complete'
 model.summary()
 
 print 'augmenting training files...'
-datagen = image.ImageDataGenerator(featurewise_center=True,
+datagen = image.ImageDataGenerator(featurewise_center=False,
                                    samplewise_center=False,
-                                   featurewise_std_normalization=True,
+                                   featurewise_std_normalization=False,
                                    samplewise_std_normalization=False,
                                    zca_whitening=False,
                                    rotation_range=0.05,
@@ -99,11 +100,11 @@ datagen = image.ImageDataGenerator(featurewise_center=True,
 datagen.fit(X_train)
 
 print 'training model...'
-model.fit_generator(datagen.flow(X_train, y_train, batch_size=32),
+model.fit_generator(datagen.flow(X_train, y_train, batch_size=32, shuffle=True),
                     samples_per_epoch=len(X_train),
                     nb_epoch=100,
                     verbose=1,
-                    validation_data=(X_test, y_test),
+                    validation_data=datagen.flow(X_test, y_test, shuffle=True),
                     callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=10, verbose=1, mode='auto')])
 print 'training complete'
 
