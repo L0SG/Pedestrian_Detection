@@ -102,6 +102,7 @@ datagen.fit(X_train)
 print 'training model...'
 model.fit_generator(datagen.flow(X_train, y_train, batch_size=32, shuffle=True),
                     samples_per_epoch=len(X_train),
+                    nb_val_samples=len(X_test),
                     nb_epoch=100,
                     verbose=1,
                     validation_data=datagen.flow(X_test, y_test, shuffle=True),
