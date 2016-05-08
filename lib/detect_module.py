@@ -55,7 +55,7 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
     proba = model.predict_proba(window_list, batch_size=32) #Need to fix batch_size
 
     #temporary
-    print model.predict_classes(window_list, batch_size=32)
+    # print model.predict_classes(window_list, batch_size=32)
 
     #temporary code
     print "CNN Probability List"
@@ -192,7 +192,7 @@ def non_max_suppression_fast(boxes, overlapThresh):
     return boxes[pick].astype("int")
 
 
-def draw_rectangle(boxes_pos, __image):
+def draw_rectangle(boxes_pos, __image, img_num):
     from PIL import ImageDraw
     from keras.preprocessing import image
 
@@ -203,10 +203,10 @@ def draw_rectangle(boxes_pos, __image):
         pos_tuple = [(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
         draw.rectangle(pos_tuple, fill=None, outline='white')
     del draw
-    img.save("Detected_Image.png", "PNG")
+    img.save("Detected_Image"+str(img_num)+".png", "PNG")
 
 
-def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, overlapThresh=0.9):
+def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, img_num, overlapThresh=0.9):
     from skimage.util import view_as_windows
     import numpy as np
     from theano import tensor as T
@@ -273,7 +273,7 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     print sup_box_pos_list
 
 
-    draw_rectangle(sup_box_pos_list, image)
+    draw_rectangle(sup_box_pos_list, image, img_num)
 
     # temporary return
     return sup_box_pos_list
