@@ -58,11 +58,11 @@ y_train = np.asarray(y_train)
 # split training data for test usage
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=test_split)
 
+# split training data for validation usage
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_split)
+
 print 'data preparation complete'
-
 print 'training data shape : ' + str(X_train.shape)
-
-
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
@@ -81,7 +81,6 @@ model.add(layers.Dropout(0.5))
 model.add(layers.Dense(500, activation='relu'))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(2, activation='softmax'))
-
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
@@ -112,7 +111,7 @@ model.fit_generator(datagen.flow(X_train, y_train, batch_size=32, shuffle=True),
                     nb_val_samples=len(X_test),
                     nb_epoch=100,
                     verbose=1,
-                    validation_data=datagen.flow(X_test, y_test, shuffle=True),
+                    validation_data=datagen.flow(X_val, y_val, shuffle=True),
                     callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=10, verbose=1, mode='auto')])
 print 'training complete'
 

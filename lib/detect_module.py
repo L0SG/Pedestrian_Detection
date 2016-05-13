@@ -36,7 +36,7 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
     import os
 
 
-    #temporary path declaration
+    # temporary path declaration
     CNN_model_path = os.path.join(os.getcwd(), 'model.json')
     CNN_weight_path = os.path.join(os.getcwd(), 'weights.h5')
 
@@ -57,12 +57,12 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
 
 
 
-    CNN_detected_image_pos_list=[]
-    CNN_detected_image_list=[]
+    CNN_detected_image_pos_list = []
+    CNN_detected_image_list = []
 
     print "Print position of CNN detected image"
     for i in range(0, len(proba)):
-        #proba[i][0]: probability of T, proba[i][1] proba. of F
+        # proba[i][0]: probability of T, proba[i][1] proba. of F
         if proba[i][0] >= accuracy:
             print window_pos_list[i]
             CNN_detected_image_pos_list.append(window_pos_list[i])
@@ -72,7 +72,6 @@ def classify_windows_with_CNN(window_list, window_pos_list, CNN_model_path, CNN_
 
     # temporary code
     CNN_detected_image_list = np.asarray(CNN_detected_image_list)
-
 
     return CNN_detected_image_pos_list, CNN_detected_image_list
 
@@ -190,6 +189,7 @@ def draw_rectangle(boxes_pos, __image):
     del draw
     img.save("Detected_Image.png", "PNG")
 
+
 def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5):
     from PIL import Image
     from keras.preprocessing import image
@@ -202,10 +202,7 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
     if len(boxes_pos) == 0:
         return []
 
-    pick=[0] * len(boxes_pos)
-
-    #temporary code
-
+    pick = [0] * len(boxes_pos)
 
     # if the bounding boxes integers, convert them to floats --
     # this is important since we'll be doing a bunch of divisions
@@ -228,8 +225,8 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
         # grab the last index in the indexes list and add the
         # index value to the list of picked indexes
         for j in range(len(ground_truth)):
-            one_gnd_picture=ground_truth[j]         #for efficiency
-            xx1 = np.maximum(one_gnd_picture[0],x1[i] )
+            one_gnd_picture=ground_truth[j]     # for efficiency
+            xx1 = np.maximum(one_gnd_picture[0], x1[i])
             yy1 = np.maximum(one_gnd_picture[1], y1[i])
             xx2 = np.minimum(one_gnd_picture[2], x2[i])
             yy2 = np.minimum(one_gnd_picture[3], y2[i])
@@ -239,21 +236,21 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
             h = np.maximum(0, yy2 - yy1 + 1)
             # compute the ratio of overlap
             overlap = (w * h) / area
-            if(overlap[i] > accThresh):    #Ovelap should over accuracy threshold which is set to 0.5 in default.
-                pick[i]=1
+            if overlap[i] > accThresh:  # Ovelap should over accuracy threshold which is set to 0.5 in default.
+                pick[i] = 1
 
-    count=1
-    check=0
+    count = 1
+    check = 0
     for i in xrange(len(pick)):
-        if pick[i]==0: #false positive case
-            im=image.array_to_img(boxes[i])
+        if pick[i] == 0: # false positive case
+            im = image.array_to_img(boxes[i])
             count += 1
-            if check==0:
-                directory=os.path.join(os.getcwd(),"false_positive_set")
+            if check == 0:
+                directory = os.path.join(os.getcwd(), "false_positive_set")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                check=1
-        im.save(os.path.join(os.getcwd(),"false_positive_set",file_name+str(count)+".ppm"),"ppm")
+                check = 1
+        im.save(os.path.join(os.getcwd(), "false_positive_set", file_name+str(count)+".ppm"), "ppm")
 
     print "False Positive Images are saved with the name '"+file_name+"'"
 
@@ -308,9 +305,9 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     print total_window_pos_list
     print "length of total window list: "+str(len(total_window_list))
 
-    #temporary overlapThresh value
-    overlapThresh=1
-    accuracy=0.5
+    # temporary overlapThresh value
+    overlapThresh = 1
+    accuracy = 0.5
 
     CNN_box_pos_list, CNN_box_list = classify_windows_with_CNN(total_window_list, total_window_pos_list, 'temporary', 'path', accuracy)
     # NMS (overlap threshold can be modified)
@@ -322,8 +319,8 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
 
 
 
-    #temporary code    
-    ground_truth=[[1,1,10,10]]
+    # temporary code
+    ground_truth = [[1,1,10,10]]
 
     extract_fp_examples(file_name, ground_truth, CNN_box_list, CNN_box_pos_list)
 
@@ -333,7 +330,6 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     print "Suppressed box position list"
     print "sup_box_pos_list length:"+str(len(sup_box_pos_list))
     print sup_box_pos_list
-
 
     draw_rectangle(sup_box_pos_list, image)
 
