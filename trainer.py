@@ -31,12 +31,17 @@ X_train = []
 y_train = []
 
 # temporary variable declaration
-train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
-train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 patchsize = (96, 48)
 datasize_pos = 15000
 datasize_neg = 15000
 test_split = 0.1
+zca_flag = True
+server_flag = True
+train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
+train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
+if server_flag:
+    train_dir_pos = "/home/jpr1/project/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
+    train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train,
@@ -88,7 +93,7 @@ datagen = image.ImageDataGenerator(featurewise_center=False,
                                    samplewise_center=False,
                                    featurewise_std_normalization=False,
                                    samplewise_std_normalization=False,
-                                   zca_whitening=False,
+                                   zca_whitening=zca_flag,
                                    rotation_range=0.05,
                                    width_shift_range=0.05,
                                    height_shift_range=0.05,
@@ -98,7 +103,9 @@ datagen = image.ImageDataGenerator(featurewise_center=False,
                                    vertical_flip=False,
                                    dim_ordering='th')
 datagen.fit(X_train)
-
+if zca_flag:
+    print 'zca whitening enabled, saving zca matrix...'
+    datagen.principal_components.dump('zca_matrix')
 print 'training model...'
 model.fit_generator(datagen.flow(X_train, y_train, batch_size=32, shuffle=True),
                     samples_per_epoch=len(X_train),
