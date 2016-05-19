@@ -38,7 +38,7 @@ def load_daimler_detection_data(dir, X, y):
     return np.asarray(x)
 
 
-def load_data_general(dir, X, Y, format, label, datasize):
+def load_data_general(dir, X, Y, file_name, format, label, datasize):
     # take all files from the specified path
     # and label each file with the specified label annotation
     # attach processed x, y to input list X, Y via extend
@@ -50,15 +50,21 @@ def load_data_general(dir, X, Y, format, label, datasize):
 
     x = []
     y = []
+    file=[]
     for f in glob.glob(os.path.join(dir, "*."+str(format))):
         img = Image.open(str(f))
         arr = image.img_to_array(img)
         x.append(arr)
         y.append(label)
+
+        file_basename=os.path.basename(str(f))
+        file.append(file_basename)
         if len(x) >= datasize:
             break
+
     X.extend(x)
     Y.extend(y)
+    file_name.extend(file)
 
 
 def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):

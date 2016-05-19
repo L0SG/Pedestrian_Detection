@@ -35,21 +35,32 @@ patchsize = (96, 48)
 datasize_pos = 15000
 datasize_neg = 15000
 test_split = 0.1
-zca_flag = True
+zca_flag = False
 server_flag = True
 train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
 train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 if server_flag:
     train_dir_pos = "/home/jpr1/project/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
-    train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
+    train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train,
                                format='pgm', label=(1, 0), datasize=datasize_pos)
 
 print 'loading negative dataset...'
-data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
-                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
+#data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
+#                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
+
+# temporary negative dataset loading
+train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set"
+data_handler.load_data_general(train_dir_neg, X_train, y_train,
+                                format='ppm', label=(0, 1), datasize=11240)
+train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
+data_handler.load_data_general(train_dir_neg, X_train, y_train,
+                               format='ppm', label=(0, 1), datasize=17000)
+train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
+data_handler.load_data_general(train_dir_neg, X_train, y_train,
+                               format='ppm', label=(0, 1), datasize=1760)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
@@ -57,12 +68,13 @@ y_train = np.asarray(y_train)
 
 # split training data for test usage
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=test_split)
-
 # split training data for validation usage
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_split)
-
 print 'data preparation complete'
+
 print 'training data shape : ' + str(X_train.shape)
+
+
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
@@ -81,6 +93,7 @@ model.add(layers.Dropout(0.5))
 model.add(layers.Dense(500, activation='relu'))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(2, activation='softmax'))
+
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
