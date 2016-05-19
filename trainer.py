@@ -29,7 +29,8 @@ if args.negativedatasize:
 
 X_train = []
 y_train = []
-
+# dummy file_name list
+file_name = []
 # temporary variable declaration
 patchsize = (96, 48)
 datasize_pos = 15000
@@ -44,23 +45,23 @@ if server_flag:
     train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
-data_handler.load_data_general(train_dir_pos, X_train, y_train,
+data_handler.load_data_general(train_dir_pos, X_train, y_train, file_name,
                                format='pgm', label=(1, 0), datasize=datasize_pos)
 
-print 'loading negative dataset...'
+#print 'loading negative dataset...'
 #data_handler.load_data_random_patches(train_dir_neg, X_train, y_train,
 #                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
 
 # temporary negative dataset loading
-train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set"
-data_handler.load_data_general(train_dir_neg, X_train, y_train,
-                                format='ppm', label=(0, 1), datasize=11240)
+train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set1"
+data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
+                                format='ppm', label=(0, 1), datasize=12062)
 train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
-data_handler.load_data_general(train_dir_neg, X_train, y_train,
-                               format='ppm', label=(0, 1), datasize=17000)
-train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
-data_handler.load_data_general(train_dir_neg, X_train, y_train,
-                               format='ppm', label=(0, 1), datasize=1760)
+data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
+                               format='ppm', label=(0, 1), datasize=17938)
+#train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set3"
+#data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
+#                               format='ppm', label=(0, 1), datasize=1760)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
