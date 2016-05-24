@@ -74,7 +74,7 @@ def classify_windows_with_CNN(window_list, window_pos_list, accuracy=0.9):
     CNN_prob_list=np.asarray(CNN_prob_list)
 
 
-    return CNN_detected_image_pos_list, CNN_detected_image_list, CNN_prob_list
+    return CNN_detected_image_list, CNN_detected_image_pos_list,  CNN_prob_list
 
 
 def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
@@ -117,16 +117,17 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
     return win_pos_list
 
 
-def non_max_suppression_fast(boxes, prob_tuple_list, overlapThresh):
+def non_max_suppression_fast(boxes_image, boxes, prob_tuple_list, overlapThresh):
     # source : http://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
     # Malisiewicz et al.
     # if there are no boxes, return an empty list
     #one-hot-encoding
 
+    #boxes_image: image file, boxes: boxes' position list
 
     import numpy as np
     if len(boxes) == 0:
-        return [], []
+        return [], [], []
 
     prob_list=prob_tuple_list[:, 0]
     #temporary code
@@ -188,7 +189,7 @@ def non_max_suppression_fast(boxes, prob_tuple_list, overlapThresh):
     # integer data type
 
 
-    return boxes[pick].astype("int"), prob_list[pick]
+    return boxes_image[pick], boxes[pick].astype("int"), prob_list[pick]
 
 
 def draw_rectangle(boxes_pos, __image, file_name):
@@ -207,6 +208,41 @@ def draw_rectangle(boxes_pos, __image, file_name):
         os.makedirs(detected_path)
     img.save(os.path.join(detected_path, "detected_image"+str(file_name)+".png"), "PNG")
 
+def extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag=0):
+    import os
+    import numpy as np
+
+    if trainingFlag==1:
+        return [[0,0,0,0]]  #meaningless ground_truth
+
+    file_name=os.path.splitext(file_name)[0]+".txt"
+    file_path=os.path.join(grd_truth_path, file_name)
+    f=open(file_path, 'r')
+    line=f.readline()
+
+    ground_truth=[]
+
+    while 1:
+        line=f.readline()
+        if not line: break  #End of File
+
+        word_list=line.split()
+        if word_list[0]=='ignore':
+            continue
+        elif word_list[0]=='person':
+            x1=int(word_list[1])
+            y1=int(word_list[2])
+            x2=x1+int(word_list[3])
+            y2=y1+int(word_list[4])
+            ground_truth.append([x1, y1, x2, y2])
+        else:
+            print "Error in Ground_Truth File I/O"
+
+    f.close()
+
+    ground_truth=np.asarray(ground_truth)
+    return ground_truth
+
 def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5):
     from PIL import Image
     from keras.preprocessing import image
@@ -219,8 +255,9 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
     if len(boxes_pos) == 0:
         return []
 
-    pick=[0] * len(boxes_pos)
+    pick=[0] * len(boxes_pos)   #pick : indicator whether the box is in the ground_truth sets or not (1: True 0:FP)
 
+    print ground_truth
 
     # if the bounding boxes integers, convert them to floats --
     # this is important since we'll be doing a bunch of divisions
@@ -244,6 +281,7 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
         # index value to the list of picked indexes
         for j in range(len(ground_truth)):
             one_gnd_picture=ground_truth[j]         #for efficiency
+
             xx1 = np.maximum(one_gnd_picture[0],x1[i] )
             yy1 = np.maximum(one_gnd_picture[1], y1[i])
             xx2 = np.minimum(one_gnd_picture[2], x2[i])
@@ -257,7 +295,7 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
             if(overlap[i] > accThresh):    #Ovelap should over accuracy threshold which is set to 0.5 in default.
                 pick[i]=1
 
-    count=1
+    count=1     #count for the number of false positive pictures
     check=0
     for i in xrange(len(pick)):
         if pick[i]==0: #false positive case
@@ -268,14 +306,14 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 check=1
-        im.save(os.path.join(os.getcwd(),"false_positive_set",file_name+str(count)+".ppm"),"ppm")
+            im.save(os.path.join(os.getcwd(),"false_positive_set",file_name+str(count)+".ppm"),"ppm")
 
     #print "False Positive Images are saved with the name '"+file_name+"'"
 
     return
 
 
-def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, file_name, overlapThresh=0.5):
+def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, file_name, grd_truth_path, overlapThresh=0.5):
     from skimage.util import view_as_windows
     import numpy as np
     from theano import tensor as T
@@ -323,11 +361,7 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     #print total_window_pos_list
     #print "length of total window list: "+str(len(total_window_list))"""
 
-    #temporary overlapThresh value
-    overlapThresh=0.6
-    accuracy=0.9
-
-    CNN_box_pos_list, CNN_box_list, CNN_prob_list = classify_windows_with_CNN(total_window_list, total_window_pos_list, accuracy)
+    CNN_box_list, CNN_box_pos_list, CNN_prob_list = classify_windows_with_CNN(total_window_list, total_window_pos_list, accuracy=0.9)
     # NMS (overlap threshold can be modified)
 
     # temporary code
@@ -335,21 +369,19 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     #print "length:"+str(len(CNN_box_pos_list))
     #print CNN_box_pos_list
 
-
-
-    #temporary code    
-    ground_truth=[[1,1,10,10]]
-
-    extract_fp_examples(file_name, ground_truth, CNN_box_list, CNN_box_pos_list)
-
-    sup_box_pos_list, sup_box_prob_list = non_max_suppression_fast(CNN_box_pos_list, CNN_prob_list, overlapThresh)
+    sup_box_list, sup_box_pos_list,  sup_box_prob_list = non_max_suppression_fast(CNN_box_list, CNN_box_pos_list, CNN_prob_list, overlapThresh=0.6)
 
     # temporary code
     print "Suppressed box list (length: "+str(len(sup_box_pos_list))+")"
     for i in range(len(sup_box_pos_list)):
         print "box #"+str(i+1)+" pos: "+str(sup_box_pos_list[i])+"  prob: "+str(sup_box_prob_list[i])
 
+    ground_truth=extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag=1)
 
+    #temporary code
+    #ground_truth=[[1,1,10,10]]
+
+    extract_fp_examples(file_name, ground_truth, sup_box_list, sup_box_pos_list, accThresh=0.5)
 
     draw_rectangle(sup_box_pos_list, image, file_name)
 

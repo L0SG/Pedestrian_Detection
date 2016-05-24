@@ -41,8 +41,8 @@ server_flag = True
 train_dir_pos = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
 train_dir_neg = "/mnt/hgfs/Shared/DaimlerBenchmark/Data/TrainingData/NonPedestrians"
 if server_flag:
-    train_dir_pos = "/home/jpr1/project/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
-    train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
+    train_dir_pos = "/home/tkdrlf9202/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
+    train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set2"
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 data_handler.load_data_general(train_dir_pos, X_train, y_train, file_name,
@@ -53,20 +53,20 @@ data_handler.load_data_general(train_dir_pos, X_train, y_train, file_name,
 #                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
 
 # temporary negative dataset loading
-train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set1"
+train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set1"
 data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
-                                format='ppm', label=(0, 1), datasize=12062)
-train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set2"
+                                format='ppm', label=(0, 1), datasize=0)
+train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set2"
 data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
-                               format='ppm', label=(0, 1), datasize=17938)
-#train_dir_neg = "/home/jpr1/project/DaimlerBenchmark/Data/false_positive_set3"
-#data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
-#                               format='ppm', label=(0, 1), datasize=1760)
+                               format='ppm', label=(0, 1), datasize=3277)
+train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set3"
+data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
+                               format='ppm', label=(0, 1), datasize=11723)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
 y_train = np.asarray(y_train)
-
+print 'Total dataset length : ' + str(len(X_train))
 # split training data for test usage
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=test_split)
 # split training data for validation usage
@@ -79,16 +79,18 @@ print 'training data shape : ' + str(X_train.shape)
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
-model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
+model.add(layers.Convolution2D(nb_filter=512, nb_row=3, nb_col=3,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
-model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
+model.add(layers.Convolution2D(nb_filter=256, nb_row=3, nb_col=3,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
-model.add(layers.Convolution2D(nb_filter=128, nb_row=5, nb_col=5,
+model.add(layers.Convolution2D(nb_filter=128, nb_row=3, nb_col=3,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
 model.add(layers.Flatten())
+model.add(layers.Dense(2000, activation='relu'))
+model.add(layers.Dropout(0.5))
 model.add(layers.Dense(1000, activation='relu'))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(500, activation='relu'))
@@ -123,11 +125,11 @@ print 'training model...'
 model.fit_generator(datagen.flow(X_train, y_train, batch_size=32, shuffle=True),
                     samples_per_epoch=len(X_train),
                     nb_val_samples=len(X_test),
-                    class_weight={0:2, 1:1},
-                    nb_epoch=100,
+                    class_weight={0: 2, 1: 1},
+                    nb_epoch=200,
                     verbose=1,
                     validation_data=datagen.flow(X_val, y_val, shuffle=True),
-                    callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=10, verbose=1, mode='auto')])
+                    callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=20, verbose=1, mode='auto')])
 print 'training complete'
 
 print 'evaluating model...'
