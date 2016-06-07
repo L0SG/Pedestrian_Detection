@@ -53,15 +53,15 @@ data_handler.load_data_general(train_dir_pos, X_train, y_train, file_name,
 #                                      format='pgm', label=(0, 1), patchsize=patchsize, datasize=datasize_neg)
 
 # temporary negative dataset loading
-train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set1"
-data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
-                                format='ppm', label=(0, 1), datasize=0)
 train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set2"
 data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
-                               format='ppm', label=(0, 1), datasize=3277)
+                                format='ppm', label=(0, 1), datasize=4610)
 train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set3"
 data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
                                format='ppm', label=(0, 1), datasize=11723)
+train_dir_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set4"
+data_handler.load_data_general(train_dir_neg, X_train, y_train, file_name,
+                               format='ppm', label=(0, 1), datasize=13667)
 
 print 'converting dataset to numpy format...'
 X_train = np.asarray(X_train)
@@ -79,7 +79,7 @@ print 'training data shape : ' + str(X_train.shape)
 print 'building model...'
 model = Sequential()
 model.add(layers.BatchNormalization(axis=1, input_shape=X_train[0].shape))
-model.add(layers.Convolution2D(nb_filter=512, nb_row=3, nb_col=3,
+model.add(layers.Convolution2D(nb_filter=256, nb_row=3, nb_col=3,
                                activation='relu', border_mode='valid'))
 model.add(layers.MaxPooling2D())
 model.add(layers.Convolution2D(nb_filter=256, nb_row=3, nb_col=3,

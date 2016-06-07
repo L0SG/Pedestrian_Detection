@@ -22,59 +22,32 @@ def pyramid(__image, downscale, min_height, min_width):
     return pyramid_list, scale_list
 
 
-def classify_windows_with_CNN(window_list, window_pos_list, accuracy=0.9):
-    from keras.models import Sequential
-    from keras.models import model_from_json
+def classify_windows_with_CNN(model, window_list, window_pos_list, accuracy):
     import keras.layers as layers
     from keras import callbacks
     import numpy as np
     from sklearn.cross_validation import train_test_split
     from lib import data_handler
     import argparse
-    #temporary module
-    from keras.preprocessing import image
-    import os
 
+    proba = model.predict_proba(window_list, batch_size=32)  # Need to fix batch_size
 
-    CNN_model_path = os.path.join(os.getcwd(), 'model4.json')
-    CNN_weight_path = os.path.join(os.getcwd(), 'weights4.h5')
-
-    model = model_from_json(open(CNN_model_path).read())
-    model.load_weights(CNN_weight_path)
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='rmsprop',
-                  metrics=['accuracy'])
-    #print "CNN model is built."
-    # We can also use probability
-    #print window_list.shape
-    proba = model.predict_proba(window_list, batch_size=32) #Need to fix batch_size
-	
-    #temporary code
-    #print "CNN Probability List"
-    #print "length: "+str(len(proba))
-    #print proba
-
-
-
-    CNN_detected_image_pos_list=[]
-    CNN_detected_image_list=[]
-    CNN_prob_list=[]
-
+    CNN_detected_image_pos_list = []
+    CNN_detected_image_list = []
+    CNN_prob_list = []
 
     for i in range(0, len(proba)):
-        #proba[i][0]: probability of T, proba[i][1] proba. of F
+        # proba[i][0]: probability of T, proba[i][1] proba. of F
         if proba[i][0] >= accuracy:
-
             CNN_detected_image_pos_list.append(window_pos_list[i])
             CNN_detected_image_list.append(window_list[i])
             CNN_prob_list.append(proba[i])
 
     CNN_detected_image_pos_list = np.asarray(CNN_detected_image_pos_list)
     CNN_detected_image_list = np.asarray(CNN_detected_image_list)
-    CNN_prob_list=np.asarray(CNN_prob_list)
+    CNN_prob_list = np.asarray(CNN_prob_list)
 
-
-    return CNN_detected_image_list, CNN_detected_image_pos_list,  CNN_prob_list
+    return CNN_detected_image_list, CNN_detected_image_pos_list, CNN_prob_list
 
 
 def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
@@ -83,18 +56,14 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
     if len(scale_list) != len(xy_num_list):
         print "Something Wrong"
 
-    # temporary code for debugging
-    # print "Print x, y number of window list per scale"
-    # print xy_num_list
-
     for x in range(0, len(scale_list)):
         scale_factor = scale_list[x]
         x_num = xy_num_list[x][0]
         y_num = xy_num_list[x][1]
 
         for i in range(0, y_num):
-            y1 = i*step*scale_factor
-            y2 = y1+scale_factor*min_height
+            y1 = i * step * scale_factor
+            y2 = y1 + scale_factor * min_height
             y1_int = int(y1)
             y2_int = int(y2)
 
@@ -103,8 +72,8 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
                 print "Y range error"
 
             for j in range(0, x_num):
-                x1 = j*step*scale_factor
-                x2 = x1+scale_factor*min_width
+                x1 = j * step * scale_factor
+                x2 = x1 + scale_factor * min_width
                 x1_int = int(x1)
                 x2_int = int(x2)
 
@@ -121,17 +90,16 @@ def non_max_suppression_fast(boxes_image, boxes, prob_tuple_list, overlapThresh)
     # source : http://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
     # Malisiewicz et al.
     # if there are no boxes, return an empty list
-    #one-hot-encoding
-
-    #boxes_image: image file, boxes: boxes' position list
+    # one-hot-encoding
+    # boxes_image: image file, boxes: boxes' position list
 
     import numpy as np
     if len(boxes) == 0:
         return [], [], []
 
-    prob_list=prob_tuple_list[:, 0]
-    #temporary code
-    #print "length of box : "+str(len(boxes))+", length of prob_list: "+str(len(prob_list))
+    prob_list = prob_tuple_list[:, 0]
+    # temporary code
+    # print "length of box : "+str(len(boxes))+", length of prob_list: "+str(len(prob_list))
 
     # if the bounding boxes integers, convert them to floats --
     # this is important since we'll be doing a bunch of divisions
@@ -161,10 +129,9 @@ def non_max_suppression_fast(boxes_image, boxes, prob_tuple_list, overlapThresh)
         i = idxs[last]
         pick.append(i)
 
-        #temporary code
-        #print "Probability List in descending order"
-        #print str(i)+"th element: "+str(prob_list[i])
-
+        # temporary code
+        # print "Probability List in descending order"
+        # print str(i)+"th element: "+str(prob_list[i])
 
         # find the largest (x, y) coordinates for the start of
         # the bounding box and the smallest (x, y) coordinates
@@ -188,7 +155,6 @@ def non_max_suppression_fast(boxes_image, boxes, prob_tuple_list, overlapThresh)
     # return only the bounding boxes that were picked using the
     # integer data type
 
-
     return boxes_image[pick], boxes[pick].astype("int"), prob_list[pick]
 
 
@@ -206,58 +172,70 @@ def draw_rectangle(boxes_pos, __image, file_name):
     detected_path = os.path.join(os.getcwd(), "detected_image")
     if not os.path.exists(detected_path):
         os.makedirs(detected_path)
-    img.save(os.path.join(detected_path, "detected_image"+str(file_name)+".png"), "PNG")
+    img.save(os.path.join(detected_path, "detected_image" + str(file_name) + ".png"), "PNG")
 
-def extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag=0):
+
+def extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag):
     import os
     import numpy as np
 
-    if trainingFlag==1:
-        return [[0,0,0,0]]  #meaningless ground_truth
+    # <variable>
+    # trainingFlag    - 0: not training 1: training (meaning every detected windows are considered as fp cases
 
-    file_name=os.path.splitext(file_name)[0]+".txt"
-    file_path=os.path.join(grd_truth_path, file_name)
-    f=open(file_path, 'r')
-    line=f.readline()
+    if trainingFlag == 1:
+        return [[0, 0, 0, 0]], [[0, 0, 0, 0]]  # meaningless ground_truth
 
-    ground_truth=[]
+    file_name = os.path.splitext(file_name)[0] + ".txt"
+    file_path = os.path.join(grd_truth_path, file_name)
+    f = open(file_path, 'r')
+    line = f.readline()
+
+    ground_truth = []
+    ground_truth_with_ignore = []
 
     while 1:
-        line=f.readline()
-        if not line: break  #End of File
+        line = f.readline()
+        if not line:
+            break  # End of File
 
-        word_list=line.split()
-        if word_list[0]=='ignore':
-            continue
-        elif word_list[0]=='person':
-            x1=int(word_list[1])
-            y1=int(word_list[2])
-            x2=x1+int(word_list[3])
-            y2=y1+int(word_list[4])
-            ground_truth.append([x1, y1, x2, y2])
+        word_list = line.split()
+
+        if (word_list[0] == 'person' or word_list[0] == 'ignore') or word_list[0] == 'people':
+            x1 = int(word_list[1])
+            y1 = int(word_list[2])
+            x2 = x1 + int(word_list[3])
+            y2 = y1 + int(word_list[4])
+
+            ground_truth_with_ignore.append([x1, y1, x2, y2])
+            if word_list[0] == 'person':
+                ground_truth.append([x1, y1, x2, y2])
+
         else:
-            print "Error in Ground_Truth File I/O"
+            print "Error in Ground_Truth File I/O        word_list[0]:" + str(word_list[0])
 
     f.close()
 
-    ground_truth=np.asarray(ground_truth)
-    return ground_truth
+    ground_truth = np.asarray(ground_truth)
+    return ground_truth, ground_truth_with_ignore
 
-def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5):
+
+def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, including_ignore, accThresh=0.5):
+    # including_ignore:0   print ground_truth and does NOT save FP examples
+    # including_ignore:1   does NOT print ground_truth, and save FP examples
+
     from PIL import Image
     from keras.preprocessing import image
     import os
     # if there are no boxes, return an empty list
     import numpy as np
 
-    # print "Test extract_fp_examples module "+str(len(boxes_pos))
-
     if len(boxes_pos) == 0:
-        return []
+        return 0
 
-    pick=[0] * len(boxes_pos)   #pick : indicator whether the box is in the ground_truth sets or not (1: True 0:FP)
+    pick = [0] * len(boxes_pos)  # pick : indicator whether the box is in the ground_truth sets or not (1: True 0:FP)
 
-    print ground_truth
+    if including_ignore == 0:
+        print ground_truth
 
     # if the bounding boxes integers, convert them to floats --
     # this is important since we'll be doing a bunch of divisions
@@ -280,9 +258,9 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
         # grab the last index in the indexes list and add the
         # index value to the list of picked indexes
         for j in range(len(ground_truth)):
-            one_gnd_picture=ground_truth[j]         #for efficiency
+            one_gnd_picture = ground_truth[j]  # for efficiency
 
-            xx1 = np.maximum(one_gnd_picture[0],x1[i] )
+            xx1 = np.maximum(one_gnd_picture[0], x1[i])
             yy1 = np.maximum(one_gnd_picture[1], y1[i])
             xx2 = np.minimum(one_gnd_picture[2], x2[i])
             yy2 = np.minimum(one_gnd_picture[3], y2[i])
@@ -292,28 +270,33 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, accThresh=0.5
             h = np.maximum(0, yy2 - yy1 + 1)
             # compute the ratio of overlap
             overlap = (w * h) / area
-            if(overlap[i] > accThresh):    #Ovelap should over accuracy threshold which is set to 0.5 in default.
-                pick[i]=1
+            if overlap[i] > accThresh:  # Ovelap should over accuracy threshold which is set to 0.5 in default.
+                pick[i] = 1
 
-    count=1     #count for the number of false positive pictures
-    check=0
+    count_fp = 0  # count for the number of false positive pictures
+    check = 0  # existence check for fp saving folder
     for i in xrange(len(pick)):
-        if pick[i]==0: #false positive case
-            im=image.array_to_img(boxes[i])
-            count += 1
-            if check==0:
-                directory=os.path.join(os.getcwd(),"false_positive_set")
+        if pick[i] == 0:  # false positive case
+            im = image.array_to_img(boxes[i])
+            count_fp += 1
+            if check == 0 and including_ignore == 1:
+                directory = os.path.join(os.getcwd(), "false_positive_set")
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                check=1
-            im.save(os.path.join(os.getcwd(),"false_positive_set",file_name+str(count)+".ppm"),"ppm")
+                check = 1
+            im.save(os.path.join(os.getcwd(), "false_positive_set", file_name + str(count_fp + 1) + ".ppm"), "ppm")
 
-    #print "False Positive Images are saved with the name '"+file_name+"'"
+    # print "False Positive Images are saved with the name '"+file_name+"'"
 
+    return len(boxes_pos) - count_fp
+
+
+def calculate_fpr_missrate():
     return
 
 
-def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, file_name, grd_truth_path, overlapThresh=0.5):
+def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, file_name, grd_truth_path,
+                            trainingFlag, min_prob, result_file, overlapThresh=0.5):
     from skimage.util import view_as_windows
     import numpy as np
     from theano import tensor as T
@@ -322,11 +305,8 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     arr_tensor4 = T.tensor4('arr', dtype='float32')
     arr_shuffler = arr_tensor4.dimshuffle((1, 0, 2, 3))
     shuffle_function = function([arr_tensor4], arr_shuffler)
-
     boxes = []
-
     pyramid_list, scale_list = pyramid(image, downscale, min_height, min_width)
-
     total_window_list = []
     xy_num_list = []
 
@@ -337,56 +317,68 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
             # window.shape[0]= number of columns of windows, window.shape[1]= the number of rows of windows
             xy_num_list.append([window.shape[1], window.shape[0]])
             # min_height & min_width info. should be discarded later for memory saving
-            window_reshaped = np.reshape(window, newshape=(window.shape[0]*window.shape[1], min_height, min_width))
+            window_reshaped = np.reshape(window, newshape=(window.shape[0] * window.shape[1], min_height, min_width))
             # position of window must be calculated here : window_pos_list
             window_channels.append(window_reshaped)
         # window_list for one pyramid picture
         window_list = np.asarray(window_channels)
-
         # (3, n, H, W) to (n, 3, H, W)
         window_list = shuffle_function(window_list)
-
-        # temporary code
-        #print window_list.shape
         total_window_list.extend(window_list)
 
     total_window_list = np.asarray(total_window_list)
-
-    # classification
     total_window_pos_list = cal_window_position(scale_list, xy_num_list, min_height, min_width, step)
-
-    """# temporary code
-    #print "Window position list test"
-    #print "length: "+str(len(total_window_pos_list))
-    #print total_window_pos_list
-    #print "length of total window list: "+str(len(total_window_list))"""
-
-    CNN_box_list, CNN_box_pos_list, CNN_prob_list = classify_windows_with_CNN(total_window_list, total_window_pos_list, accuracy=0.9)
+    # classification
+    CNN_box_list, CNN_box_pos_list, CNN_prob_list = classify_windows_with_CNN(model, total_window_list,
+                                                                              total_window_pos_list, accuracy=min_prob)
     # NMS (overlap threshold can be modified)
-
+    sup_box_list, sup_box_pos_list, sup_box_prob_list = non_max_suppression_fast(CNN_box_list, CNN_box_pos_list,
+                                                                                 CNN_prob_list, overlapThresh=0.6)
     # temporary code
-    #print "CNN box position list"
-    #print "length:"+str(len(CNN_box_pos_list))
-    #print CNN_box_pos_list
-
-    sup_box_list, sup_box_pos_list,  sup_box_prob_list = non_max_suppression_fast(CNN_box_list, CNN_box_pos_list, CNN_prob_list, overlapThresh=0.6)
-
-    # temporary code
-    print "Suppressed box list (length: "+str(len(sup_box_pos_list))+")"
+    print "Suppressed box list (length: " + str(len(sup_box_pos_list)) + ")"
     for i in range(len(sup_box_pos_list)):
-        print "box #"+str(i+1)+" pos: "+str(sup_box_pos_list[i])+"  prob: "+str(sup_box_prob_list[i])
+        print "box #" + str(i + 1) + " pos: " + str(sup_box_pos_list[i]) + "  prob: " + str(sup_box_prob_list[i])
 
-    ground_truth=extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag=1)
+    # save suppressed box list to "res" file format
+    # format : [frame, x_start, y_start, x_delta, y_delta, prob]
+    # annotation file name is 0 based, res frame is 1 based
+    # ex) I00000.txt -> frame #1
 
-    #temporary code
-    #ground_truth=[[1,1,10,10]]
+    # ad-hoc frame naming : take [1:6] (5 digits) and cast as int
+    frame_idx = int(file_name[1:6]) + 1
+    for idx in xrange(0, len(sup_box_pos_list)):
+        x_start = sup_box_pos_list[idx][0]
+        x_delta = sup_box_pos_list[idx][2] - x_start
+        y_start = sup_box_pos_list[idx][1]
+        y_delta = sup_box_pos_list[idx][3] - y_start
+        prob = sup_box_prob_list[idx]
+        line = str(frame_idx)+','+str(x_start)+','+str(y_start)+\
+               ','+str(x_delta)+','+str(y_delta)+','+str(prob)+'\n'
+        result_file.write(line)
 
-    extract_fp_examples(file_name, ground_truth, sup_box_list, sup_box_pos_list, accThresh=0.5)
+    ground_truth, ground_truth_with_ignore = extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag)
+
+    # temporary code
+    # ground_truth=[[1,1,10,10]]
+
+    count_tp = extract_fp_examples(file_name, ground_truth, sup_box_list, sup_box_pos_list, including_ignore=0,
+                                   accThresh=0.5)
+    count_tp_with_ignore = extract_fp_examples(file_name, ground_truth_with_ignore, sup_box_list, sup_box_pos_list,
+                                               including_ignore=1, accThresh=0.5)
 
     draw_rectangle(sup_box_pos_list, image, file_name)
 
+    if len(sup_box_pos_list) != 0:
+        fppi = len(sup_box_pos_list) - count_tp_with_ignore
+    else:
+        fppi = 0
+    if len(ground_truth) != 0:
+        miss_rate_per_image = 1 - float(count_tp) / len(ground_truth)
+    else:
+        miss_rate_per_image = 0
     # temporary return
-    return sup_box_pos_list
+    return fppi, miss_rate_per_image
+
 
 # We get the PATH of ground_truth files, not position of ground_truth boxes position for encapsulation.
 
@@ -475,5 +467,3 @@ def pyramid(image, downscale, min_height, min_width):
 
     return pyramid_list, scale_list
 """
-
-
