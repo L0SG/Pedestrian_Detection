@@ -284,7 +284,7 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, including_ign
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 check = 1
-            im.save(os.path.join(os.getcwd(), "false_positive_set", file_name + str(count_fp + 1) + ".ppm"), "ppm")
+            #im.save(os.path.join(os.getcwd(), "false_positive_set", file_name + str(count_fp + 1) + ".ppm"), "ppm")
 
     # print "False Positive Images are saved with the name '"+file_name+"'"
 

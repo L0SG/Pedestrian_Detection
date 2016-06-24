@@ -66,6 +66,40 @@ def load_data_general(dir, X, Y, file_name, format, label, datasize):
     Y.extend(y)
     file_name.extend(file)
 
+def load_data_train(dir, X, Y, file_name, format, label, patchsize, datasize):
+    # take all files from the specified path
+    # and label each file with the specified label annotation
+    # attach processed x, y to input list X, Y via extend
+    # X, Y are needed to be converted to numpy format
+
+
+    import glob
+    from PIL import Image
+    from keras.preprocessing import image
+    import os
+
+    x = []
+    y = []
+    file=[]
+    for f in glob.glob(os.path.join(dir, "*."+str(format))):
+        img = Image.open(str(f))
+        # resize images to fixed patchsize for training
+        if img.mode == 'L':
+            img = img.convert('RGB')
+        img = img.resize((patchsize[1], patchsize[0]), Image.ANTIALIAS)
+        arr = image.img_to_array(img)
+        x.append(arr)
+        y.append(label)
+
+        file_basename = os.path.basename(str(f))
+        file.append(file_basename)
+        if len(x) >= datasize:
+            break
+
+    X.extend(x)
+    Y.extend(y)
+    file_name.extend(file)
+
 
 def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
     # take all files from the specified path and generate random patches from these files
