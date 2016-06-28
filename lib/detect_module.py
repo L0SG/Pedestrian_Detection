@@ -30,7 +30,7 @@ def classify_windows_with_CNN(model, window_list, window_pos_list, accuracy):
     from lib import data_handler
     import argparse
 
-    proba = model.predict_proba(window_list, batch_size=32)  # Need to fix batch_size
+    proba = model.predict_proba(window_list, batch_size=128)  # Need to fix batch_size
 
     CNN_detected_image_pos_list = []
     CNN_detected_image_list = []
@@ -53,13 +53,16 @@ def classify_windows_with_CNN(model, window_list, window_pos_list, accuracy):
 def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
     import numpy as np
     win_pos_list = []
-    if len(scale_list) != len(xy_num_list):
+    if len(scale_list)*3 != len(xy_num_list):
         print "Something Wrong"
 
     for x in range(0, len(scale_list)):
         scale_factor = scale_list[x]
         x_num = xy_num_list[x][0]
         y_num = xy_num_list[x][1]
+        # fix of channel errors
+        # x_num = xy_num_list[x*3][0]
+        # y_num = xy_num_list[x*3][1]
 
         for i in range(0, y_num):
             y1 = i * step * scale_factor
@@ -67,19 +70,11 @@ def cal_window_position(scale_list, xy_num_list, min_height, min_width, step):
             y1_int = int(y1)
             y2_int = int(y2)
 
-            # temporary code for debugging
-            if y2 > 480:
-                print "Y range error"
-
             for j in range(0, x_num):
                 x1 = j * step * scale_factor
                 x2 = x1 + scale_factor * min_width
                 x1_int = int(x1)
                 x2_int = int(x2)
-
-                # temporary code for debugging
-                if x2 > 640:
-                    print "x range error"
 
                 win_pos_list.append([x1_int, y1_int, x2_int, y2_int])
     win_pos_list = np.asarray(win_pos_list)
@@ -158,21 +153,22 @@ def non_max_suppression_fast(boxes_image, boxes, prob_tuple_list, overlapThresh)
     return boxes_image[pick], boxes[pick].astype("int"), prob_list[pick]
 
 
-def draw_rectangle(boxes_pos, __image, file_name):
+def draw_rectangle(boxes_pos, boxes_prob, __image, file_name, fp_name):
     from PIL import ImageDraw
     from keras.preprocessing import image
     import os
     img = image.array_to_img(__image, scale=False)
     draw = ImageDraw.Draw(img)
 
-    for box_pos in boxes_pos:
-        pos_tuple = [(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
-        draw.rectangle(pos_tuple, fill=None, outline='white')
+    for idx, box_pos in enumerate(boxes_pos):
+        if boxes_prob[idx] > 0.99:
+            pos_tuple = [(box_pos[0], box_pos[1]), (box_pos[2], box_pos[3])]
+            draw.rectangle(pos_tuple, fill=None, outline='white')
     del draw
     detected_path = os.path.join(os.getcwd(), "detected_image")
     if not os.path.exists(detected_path):
         os.makedirs(detected_path)
-    img.save(os.path.join(detected_path, "detected_image" + str(file_name) + ".png"), "PNG")
+    img.save(os.path.join(detected_path, "detected_image" + str(fp_name)+str(file_name) + ".png"), "PNG")
 
 
 def extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag):
@@ -219,7 +215,7 @@ def extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag):
     return ground_truth, ground_truth_with_ignore
 
 
-def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, including_ignore, accThresh=0.5):
+def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, boxes_prob, including_ignore, fp_name, overlap_thresh=0.1, accThresh=0.5):
     # including_ignore:0   print ground_truth and does NOT save FP examples
     # including_ignore:1   does NOT print ground_truth, and save FP examples
 
@@ -270,13 +266,13 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, including_ign
             h = np.maximum(0, yy2 - yy1 + 1)
             # compute the ratio of overlap
             overlap = (w * h) / area
-            if overlap[i] > accThresh:  # Ovelap should over accuracy threshold which is set to 0.5 in default.
+            if overlap[i] > overlap_thresh and boxes_prob[i] > accThresh:  # Ovelap should over accuracy threshold which is set to 0.5 in default.
                 pick[i] = 1
 
     count_fp = 0  # count for the number of false positive pictures
     check = 0  # existence check for fp saving folder
     for i in xrange(len(pick)):
-        if pick[i] == 0:  # false positive case
+        if pick[i] == 0 and boxes_prob[i] > 0.9:  # false positive case
             im = image.array_to_img(boxes[i])
             count_fp += 1
             if check == 0 and including_ignore == 1:
@@ -284,7 +280,7 @@ def extract_fp_examples(file_name, ground_truth, boxes, boxes_pos, including_ign
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 check = 1
-            #im.save(os.path.join(os.getcwd(), "false_positive_set", file_name + str(count_fp + 1) + ".ppm"), "ppm")
+            im.save(os.path.join(os.getcwd(), "false_positive_set", fp_name+file_name + str(count_fp + 1) + ".png"), "png")
 
     # print "False Positive Images are saved with the name '"+file_name+"'"
 
@@ -296,7 +292,7 @@ def calculate_fpr_missrate():
 
 
 def generate_bounding_boxes(model, image, downscale, step, min_height, min_width, file_name, grd_truth_path,
-                            trainingFlag, min_prob, result_file, overlapThresh=0.5):
+                            trainingFlag, min_prob, result_file, fp_name, overlapThresh=0.5):
     from skimage.util import view_as_windows
     import numpy as np
     from theano import tensor as T
@@ -345,28 +341,29 @@ def generate_bounding_boxes(model, image, downscale, step, min_height, min_width
     # ex) I00000.txt -> frame #1
 
     # ad-hoc frame naming : take [1:6] (5 digits) and cast as int
-    frame_idx = int(file_name[1:6]) + 1
-    for idx in xrange(0, len(sup_box_pos_list)):
-        x_start = sup_box_pos_list[idx][0]
-        x_delta = sup_box_pos_list[idx][2] - x_start
-        y_start = sup_box_pos_list[idx][1]
-        y_delta = sup_box_pos_list[idx][3] - y_start
-        prob = sup_box_prob_list[idx]
-        line = str(frame_idx)+','+str(x_start)+','+str(y_start)+\
-               ','+str(x_delta)+','+str(y_delta)+','+str(prob)+'\n'
-        result_file.write(line)
+    if trainingFlag == 0:
+        frame_idx = int(file_name[1:6]) + 1
+        for idx in xrange(0, len(sup_box_pos_list)):
+            x_start = sup_box_pos_list[idx][0]
+            x_delta = sup_box_pos_list[idx][2] - x_start
+            y_start = sup_box_pos_list[idx][1]
+            y_delta = sup_box_pos_list[idx][3] - y_start
+            prob = sup_box_prob_list[idx]
+            line = str(frame_idx)+','+str(x_start)+','+str(y_start)+\
+                   ','+str(x_delta)+','+str(y_delta)+','+str(prob)+'\n'
+            result_file.write(line)
 
     ground_truth, ground_truth_with_ignore = extract_Daimler_ground_truth(file_name, grd_truth_path, trainingFlag)
 
     # temporary code
     # ground_truth=[[1,1,10,10]]
 
-    count_tp = extract_fp_examples(file_name, ground_truth, sup_box_list, sup_box_pos_list, including_ignore=0,
+    count_tp = extract_fp_examples(file_name, ground_truth, sup_box_list, sup_box_pos_list, sup_box_prob_list, fp_name=fp_name, including_ignore=0,
                                    accThresh=0.5)
-    count_tp_with_ignore = extract_fp_examples(file_name, ground_truth_with_ignore, sup_box_list, sup_box_pos_list,
+    count_tp_with_ignore = extract_fp_examples(file_name, ground_truth_with_ignore, sup_box_list, sup_box_pos_list, sup_box_prob_list, fp_name=fp_name,
                                                including_ignore=1, accThresh=0.5)
 
-    draw_rectangle(sup_box_pos_list, image, file_name)
+    draw_rectangle(sup_box_pos_list, sup_box_prob_list, image, file_name, fp_name)
 
     if len(sup_box_pos_list) != 0:
         fppi = len(sup_box_pos_list) - count_tp_with_ignore

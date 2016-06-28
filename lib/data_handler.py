@@ -38,7 +38,7 @@ def load_daimler_detection_data(dir, X, y):
     return np.asarray(x)
 
 
-def load_data_general(dir, X, Y, file_name, format, label, datasize):
+def load_data_general(dir, X, Y, file_name, format, label, datasize, mode):
     # take all files from the specified path
     # and label each file with the specified label annotation
     # attach processed x, y to input list X, Y via extend
@@ -53,6 +53,12 @@ def load_data_general(dir, X, Y, file_name, format, label, datasize):
     file=[]
     for f in glob.glob(os.path.join(dir, "*."+str(format))):
         img = Image.open(str(f))
+        if mode == 'L':
+            if img.mode == 'RGB':
+                img = img.convert('L')
+        elif mode == 'RGB':
+            if img.mode == 'L':
+                img = img.convert('RGB')
         arr = image.img_to_array(img)
         x.append(arr)
         y.append(label)
@@ -66,7 +72,7 @@ def load_data_general(dir, X, Y, file_name, format, label, datasize):
     Y.extend(y)
     file_name.extend(file)
 
-def load_data_train(dir, X, Y, file_name, format, label, patchsize, datasize):
+def load_data_train(dir, X, Y, file_name, format, label, patchsize, datasize, mode='L'):
     # take all files from the specified path
     # and label each file with the specified label annotation
     # attach processed x, y to input list X, Y via extend
@@ -83,9 +89,18 @@ def load_data_train(dir, X, Y, file_name, format, label, patchsize, datasize):
     file=[]
     for f in glob.glob(os.path.join(dir, "*."+str(format))):
         img = Image.open(str(f))
+        # discard bad examples (sometimes present in caltech positive set)
+        width, height = img.size
+        if width < 10 or height < 20:
+            datasize -= 1
+            continue
         # resize images to fixed patchsize for training
-        if img.mode == 'L':
-            img = img.convert('RGB')
+        if mode == 'L':
+            if img.mode == 'RGB':
+                img = img.convert('L')
+        elif mode == 'RGB':
+            if img.mode == 'L':
+                img = img.convert('RGB')
         img = img.resize((patchsize[1], patchsize[0]), Image.ANTIALIAS)
         arr = image.img_to_array(img)
         x.append(arr)
@@ -142,3 +157,29 @@ def load_data_random_patches(dir, X, Y, format, label, patchsize, datasize):
                 break
     X.extend(x)
     Y.extend(y)
+
+def extract_caltech_random_patches(f, name, patchsize, datasize):
+    from PIL import Image
+    from keras.preprocessing import image
+    from sklearn.feature_extraction.image import extract_patches_2d
+    import os
+    from theano import tensor as T
+    from theano import function
+    arr_tensor3 = T.tensor3('arr')
+    arr_shuffler = arr_tensor3.dimshuffle((1, 2, 0))
+    shuffle_function = function([arr_tensor3], arr_shuffler)
+
+    arr_tensor3_2 = T.tensor4('arr')
+    arr_deshuffler = arr_tensor3_2.dimshuffle(0, 3, 1, 2)
+    deshuffle_function = function([arr_tensor3_2], arr_deshuffler)
+
+    img = Image.open(str(f))
+    arr = image.img_to_array(img)
+    arr_shuffled = shuffle_function(arr)
+    patches = extract_patches_2d(arr_shuffled, patch_size=patchsize, max_patches=3)
+    patches_deshuffled = deshuffle_function(patches)
+    count = 0
+    for idx in xrange(0, len(patches_deshuffled)):
+        patch_img = image.array_to_img(patches_deshuffled[idx])
+        patch_img.save(os.path.join(os.getcwd(), 'caltech_random_patches', name+str(count)+'.png'))
+        count += 1

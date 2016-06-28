@@ -38,33 +38,60 @@ file_name = []
 patchsize = (64, 32)
 test_split = 0.1
 zca_flag = False
+mode = 'L'
 ###########################################################################################
 print 'loading positive pedestrian dataset...'
 train_daimler_pos = "/home/tkdrlf9202/DaimlerBenchmark/Data/TrainingData/Pedestrians/48x96"
-data_handler.load_data_train(train_daimler_pos, X_train, y_train, file_name, patchsize=patchsize,
+data_handler.load_data_train(train_daimler_pos, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
                                format='pgm', label=(1, 0), datasize=15660)
 
 train_caltech_pos = "/home/tkdrlf9202/CaltechPedestrians/data-USA/images_cropped"
-data_handler.load_data_train(train_caltech_pos, X_train, y_train, file_name, patchsize=patchsize,
-                             format='png', label=(1, 0), datasize=49187)
+data_handler.load_data_train(train_caltech_pos, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(1, 0), datasize=49055)
+
+train_eth_pos = "/home/tkdrlf9202/CaltechPedestrians/data-ETH/images_cropped"
+data_handler.load_data_train(train_eth_pos, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(1, 0), datasize=11941)
+
+train_inria_pos = "/home/tkdrlf9202/CaltechPedestrians/data-INRIA/images_cropped"
+data_handler.load_data_train(train_inria_pos, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(1, 0), datasize=1236)
+
+train_tudbrussels_pos = "/home/tkdrlf9202/CaltechPedestrians/data-TudBrussels/images_cropped"
+data_handler.load_data_train(train_tudbrussels_pos, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(1, 0), datasize=1207)
 
 total_positive = len(X_train)
 print 'total positive data : ' + str(total_positive)
 
 print 'loading negative dataset...'
-
+# caution : file format changed from ppm to png after fp5
+"""
 train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set1"
-data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize,
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
                              format='ppm', label=(0, 1), datasize=34539)
+"""
 train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set2"
-data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize,
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
                              format='ppm', label=(0, 1), datasize=17938)
 train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set3"
-data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize,
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
                              format='ppm', label=(0, 1), datasize=11723)
 train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set4"
-data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize,
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
                              format='ppm', label=(0, 1), datasize=13667)
+train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set5"
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(0, 1), datasize=36646)
+train_daimler_neg = "/home/tkdrlf9202/DaimlerBenchmark/Data/false_positive_set6"
+data_handler.load_data_train(train_daimler_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(0, 1), datasize=3769)
+# bad fp set?
+"""
+train_caltech_neg = "/home/tkdrlf9202/CaltechPedestrians/data-USA/fp3"
+data_handler.load_data_train(train_caltech_neg, X_train, y_train, file_name, patchsize=patchsize, mode=mode,
+                             format='png', label=(0, 1), datasize=183633)
+"""
 
 total_negative = len(X_train) - total_positive
 print 'total negative data : ' + str(total_negative)
@@ -131,7 +158,7 @@ model.add(layers.Dense(2, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy',
               # default RMSprop lr is 0.001, set faster rate with batch.norm
-              optimizer=optimizers.RMSprop(lr=0.005),
+              optimizer=optimizers.RMSprop(lr=0.01),
               metrics=['accuracy'])
 print 'building complete'
 model.summary()
@@ -142,7 +169,7 @@ datagen = image.ImageDataGenerator(featurewise_center=False,
                                    featurewise_std_normalization=False,
                                    samplewise_std_normalization=False,
                                    zca_whitening=zca_flag,
-                                   rotation_range=5,
+                                   rotation_range=1,
                                    width_shift_range=0.05,
                                    height_shift_range=0.05,
                                    shear_range=0.,
@@ -159,10 +186,10 @@ model.fit_generator(datagen.flow(X_train, y_train, batch_size=128, shuffle=True)
                     samples_per_epoch=len(X_train),
                     nb_val_samples=len(X_test),
                     class_weight={0: 1, 1: 1},
-                    nb_epoch=100,
+                    nb_epoch=200,
                     verbose=1,
                     validation_data=datagen.flow(X_val, y_val, shuffle=True),
-                    callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=10, verbose=1, mode='auto')])
+                    callbacks=[callbacks.EarlyStopping(monitor='val_acc', patience=20, verbose=1, mode='auto')])
 print 'training complete'
 
 print 'evaluating model...'
